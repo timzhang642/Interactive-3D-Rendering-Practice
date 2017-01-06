@@ -1,0 +1,128 @@
+<html lang="en">
+	<head>
+        <style>
+        
+        </style>
+    </head>
+    
+    <body>
+        <div id="container">
+        </div>
+    </body>
+<script src="./lib/jquery-1.8.3.min.js"></script>
+<script src="./lib/three.min.js"></script>
+<script src="./lib/Coordinates.js"></script>
+<script>
+    ////////////////////////////////////////////////////////////////////////////////
+    // Polygon Creation Exercise
+    // Your task is to complete the function PolygonGeometry(sides)
+    // which takes 1 argument:
+    //   sides - how many edges the polygon has.
+    // Return the mesh that defines the minimum number of triangles necessary
+    // to draw the polygon.
+    // Radius of the polygon is 1. Center of the polygon is at 0, 0.
+    ////////////////////////////////////////////////////////////////////////////////
+    /*global THREE, Coordinates, $, document*/
+
+    var camera, scene, renderer;
+    var windowScale;
+
+    function PolygonGeometry(sides, center_location, radius) {
+        var geo = new THREE.Geometry();
+
+        // generate vertices
+        for ( var pt = 0 ; pt < sides; pt++ ) // pt refers to index of vertex
+        {
+            // Add 90 degrees so we start at +Y axis, rotate counterclockwise around
+            var angle = (Math.PI/2) + (pt / sides) * 2 * Math.PI;
+            //console.log((pt / sides) * 2 * Math.PI)
+            
+            // (x,y) coordinates for each vertex based on specified center location
+            var x = center_location.x + Math.cos( angle ) * radius;
+            var y = center_location.y + Math.sin( angle ) * radius;
+
+            // YOUR CODE HERE
+            // Save the vertex location
+            //console.log(x,y)
+            geo.vertices.push(new THREE.Vector3(x,y,0));
+            
+        }
+        // YOUR CODE HERE
+        // Write the code to generate minimum number of faces for the polygon
+        // Polygon with N edges can be broken down in N-2 triangles
+        for (vertex = 0; vertex < sides-2; vertex++) {
+            //console.log(vertex)
+            geo.faces.push(new THREE.Face3(0,vertex+1,vertex+2)); // 
+        }
+        // Return the geometry object
+        return geo;
+    }
+
+    function init() {
+        // Setting up some parameters
+        var canvasWidth = 846;
+        var canvasHeight = 494;
+        // For grading the window is fixed in size; here's general code:
+        //var canvasWidth = window.innerWidth;
+        //var canvasHeight = window.innerHeight;
+        var canvasRatio = canvasWidth / canvasHeight;
+        // scene
+        scene = new THREE.Scene();
+
+        // Camera: Y up, X right, Z up
+        windowScale = 12;
+        var windowWidth = windowScale * canvasRatio;
+        var windowHeight = windowScale;
+
+        camera = new THREE.OrthographicCamera( windowWidth / - 2, windowWidth / 2, windowHeight / 2, windowHeight / - 2, 0, 40 );
+
+        var focus = new THREE.Vector3( 0,3,0 );
+        camera.position.x = focus.x;
+        camera.position.y = focus.y;
+        camera.position.z = 10;
+        camera.lookAt(focus);
+
+        renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true});
+        renderer.gammaInput = true;
+        renderer.gammaOutput = true;
+        renderer.setSize( canvasWidth, canvasHeight );
+        renderer.setClearColor( 0xFFFFFF, 1.0 );
+
+    }
+    function showGrids() {
+        // Background grid and axes. Grid step size is 1, axes cross at 0, 0
+        Coordinates.drawGrid({size:50,scale:1,orientation:"z"});
+        Coordinates.drawAxes({axisLength:8,axisOrientation:"x",axisRadius:0.02});
+        Coordinates.drawAxes({axisLength:8,axisOrientation:"y",axisRadius:0.02});
+    }
+    function addToDOM() {
+        var container = document.getElementById('container');
+        var canvas = container.getElementsByTagName('canvas');
+        if (canvas.length>0) {
+            container.removeChild(canvas[0]);
+        }
+        container.appendChild( renderer.domElement );
+    }
+    function render() {
+        renderer.render( scene, camera );
+    }
+
+    // Main body of the script
+
+
+    try {
+        init();
+        showGrids();
+        // generate polygon with specified (num of edges, centroid location, radius)
+        var geo = PolygonGeometry(6, new THREE.Vector3( 3, 2, 0 ), 2); 
+        var material = new THREE.MeshBasicMaterial( { color: 0xff0000, side: THREE.FrontSide } );
+        var mesh = new THREE.Mesh( geo, material );
+        scene.add( mesh );
+        addToDOM();
+        render();
+    } catch(e) {
+        var errorReport = "Your program encountered an unrecoverable error, can not draw on canvas. Error was:<br/><br/>";
+        $('#container').append(errorReport+e);
+    }
+</script>
+</html>
