@@ -1,0 +1,131 @@
+<html lang="en">
+	<head>
+        <style>
+            canvas { width: 100%; height: 100% }
+        </style>
+    </head>
+    
+    <body>
+    </body>
+<script src="./lib/three.min.js"></script>
+<script src="./lib/OrbitAndPanControls.new.js"></script>
+<script>
+    // Animate line using BufferGeometry
+    // You cannot resize buffers (this is very costly,	basically the equivalent to creating new a geometry). You can however update the content of buffers.
+    // This means that if you know an attribute of you BufferGeometry will grow, say the number of vertices, you must pre-allocate a buffer large enough to hold any new vertices that may be created. Of course, this also means that there will be a maximum size for your BufferGeometry
+    // In this case, we'll allocate space in the buffer for 500 vertices but draw only two at first, using BufferGeometry.drawRange.
+    
+    var renderer, scene, camera;
+
+    var line;
+    var MAX_POINTS = 200; // maximum number of vertices allocation in the buffer
+    var drawCount;
+
+    init();
+    animate();
+
+    function init() {
+
+        // make a div to display some words
+        var info = document.createElement( 'div' );
+        info.style.position = 'absolute';
+        info.style.top = '30px';
+        info.style.width = '100%';
+        info.style.textAlign = 'center';
+        info.style.color = '#fff';
+        info.style.fontWeight = 'bold';
+        info.style.backgroundColor = 'transparent';
+        info.style.zIndex = '1';
+        info.style.fontFamily = 'Monospace';
+        info.innerHTML = "three.js animataed line using BufferGeometry";
+        document.body.appendChild( info );
+
+        // renderer
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+
+        // scene
+        scene = new THREE.Scene();
+
+        // camera
+        camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 1, 10000 );
+        camera.position.set( 0, 0, 1000 );
+        // CONTROLS
+        cameraControls = new THREE.OrbitAndPanControls(camera, renderer.domElement);
+        cameraControls.target.set(0,0,0);
+
+        // create BufferGeometry
+        var geometry = new THREE.BufferGeometry();
+
+        // initiate the position array with MAX_POINTS zeors*3, meaning 3 vertices per point, MAX_POINTS points in total
+        var positions = new Float32Array( MAX_POINTS * 3 ); 
+        geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+
+        // drawcalls
+        drawCount = 2; // draw the first 2 points, only
+        geometry.setDrawRange( 0, drawCount );
+
+        // material
+        var material = new THREE.LineBasicMaterial( { color: 0xff0000, linewidth: 2 } );
+
+        // create line
+        line = new THREE.Line( geometry,  material );
+        scene.add( line );
+
+        // generate all random points in the line trajectory
+        updatePositions();
+    }
+
+    // create random positions for the entire trajectory
+    function updatePositions() {
+        var positions = line.geometry.attributes.position.array;
+
+        var x = y = z = index = 0;
+        
+        for ( var i = 0, l = MAX_POINTS; i < l; i ++ ) {
+            positions[ index ++ ] = x;
+            positions[ index ++ ] = y;
+            positions[ index ++ ] = z;
+            
+            // (Math.random() - 0.5) * 30 gives randome update range (-15,15)
+            x += ( Math.random() - 0.5 ) * 30;
+            y += ( Math.random() - 0.5 ) * 30;
+            z += ( Math.random() - 0.5 ) * 30;
+        }
+    }
+
+    // render
+    function render() {
+        renderer.render( scene, camera );
+        
+        cameraControls.update();
+    }
+
+    // animate
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        // this is the index indicating which position to go next
+        drawCount = ( drawCount + 1 ) % MAX_POINTS;
+        
+        // set the draw range in the position array
+        // if (0, drawCount), then draw the entire line from beginning to current drawCount position
+        // if (drawCount-10, drawCount), then only keep 10 points in the line
+        line.geometry.setDrawRange( 0, drawCount );
+
+        // change line color whenever all the positions in line is rendered out
+        if ( drawCount === 0 ) {
+
+            // create new line trajectory
+            updatePositions();
+
+            line.geometry.attributes.position.needsUpdate = true; // required after the first render
+            line.material.color.setHSL( Math.random(), 1, 0.5 ); // change to a random color
+        }
+        render();
+    }
+</script>
+</html>
